@@ -1,0 +1,1114 @@
+openapi: 3.0.0
+info:
+  title: Communication.ai API
+  description: The OpenResearch API (OR-API) provides users with machine learning-powered
+    NLP tools for scientific text analysis and exploration. In addition to allowing
+    the training of custom models with custom data, the OR-API enables users to integrate
+    the insights from the analysis into dashboards and applications.
+  termsOfService: http://
+  contact:
+    name: OpenResearch COVID-19 GbR
+    url: https://openresearch.cloud
+    email: contact@openresearch.cloud
+  license:
+    name: Apache License - Version 2.0, January 2004
+    url: http://www.apache.org/licenses//
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/OR-API/job-api/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: https://virtserver.swaggerhub.com/openresearch/communication-api/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: https://virtserver.swaggerhub.com/openresearch/job-ai/1.0.0
+  description: SwaggerHub API Auto Mocking
+paths:
+  /health:
+    get:
+      tags:
+      - service
+      description: Check health of service.
+      operationId: health_get
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+      x-openapi-router-controller: communication_module.controllers.service_controller
+  /communication/topics:
+    get:
+      tags:
+      - topics
+      description: Obtain information about topics.
+      operationId: communication_topics_get
+      parameters:
+      - name: limit
+        in: query
+        description: The amount of topics to be returned.
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          example: 10
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    post:
+      tags:
+      - topics
+      description: Create a topic.
+      operationId: communication_topics_post
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/topics/{id}:
+    get:
+      tags:
+      - topics
+      description: Obtain information about a topic.
+      operationId: communication_topics_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of topic.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    put:
+      tags:
+      - topics
+      description: Change the metadata of a topic.
+      operationId: communication_topics_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of topic.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    delete:
+      tags:
+      - topics
+      description: Remove a a topic.
+      operationId: communication_topics_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of topic.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/topics/{id}/events:
+    get:
+      tags:
+      - topics
+      description: Obtain information about events.
+      operationId: communication_topics_id_events_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of topic.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    post:
+      tags:
+      - topics
+      description: Create an event.
+      operationId: communication_topics_id_events_post
+      parameters:
+      - name: id
+        in: path
+        description: Id of topic.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      - name: kind
+        in: header
+        description: Kind of Event.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          enum:
+          - start_job
+          - waiting_job
+          - processing_job
+          - cancel_job
+          - complete_job
+          - remove_job
+      - name: job_id
+        in: header
+        description: Id of job.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/events:
+    post:
+      tags:
+      - topics
+      description: Create an event.
+      operationId: communication_events_post
+      parameters:
+      - name: x_amz_sns_message_type
+        in: header
+        description: The type of message. The possible values are SubscriptionConfirmation,
+          Notification, and UnsubscribeConfirmation.
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: SubscriptionConfirmation
+      - name: x_amz_sns_message_id
+        in: header
+        description: A Universally Unique Identifier, unique for each message published.
+          For a notification that Amazon SNS resends during a retry, the message ID
+          of the original message is used.
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: 165545c9-2a5c-472c-8df2-7ff2be2b3b1b
+      - name: x_amz_sns_topic_arn
+        in: header
+        description: The Amazon Resource Name (ARN) for the topic that this message
+          was published to.
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: arn:aws:sns:us-west-2:123456789012:MyTopic
+      - name: x_amz_sns_subscription_arn
+        in: header
+        description: The ARN for the subscription to this endpoint.
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: arn:aws:sns:us-west-2:123456789012:MyTopic:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55
+      requestBody:
+        description: The subscription confirmation message is a POST message with
+          a message body that contains a JSON document with name-value pairs.
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: string
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/events/{id}:
+    get:
+      tags:
+      - topics
+      description: Obtain information about an event.
+      operationId: communication_events_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of event.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    put:
+      tags:
+      - topics
+      description: Change metadata about an event.
+      operationId: communication_events_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of event.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+    delete:
+      tags:
+      - topics
+      description: Remove an event.
+      operationId: communication_events_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of event.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/events/{id}/broadcast:
+    get:
+      tags:
+      - topics
+      description: Broadcast an event.
+      operationId: communication_events_id_broadcast_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of event.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+      x-openapi-router-controller: communication_module.controllers.topics_controller
+  /communication/queues:
+    get:
+      tags:
+      - queues
+      description: Obtain information about queues.
+      operationId: communication_queues_get
+      parameters:
+      - name: limit
+        in: query
+        description: The amount of queues to be returned.
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          example: 10
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Queue'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    post:
+      tags:
+      - queues
+      description: Create a queue.
+      operationId: communication_queues_post
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Queue'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+  /communication/queues/{id}:
+    get:
+      tags:
+      - queues
+      description: Obtain information about a queue.
+      operationId: communication_queues_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of queue.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    put:
+      tags:
+      - queues
+      description: Change metadata of a queue.
+      operationId: communication_queues_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of queue.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    delete:
+      tags:
+      - queues
+      description: Remove a queue.
+      operationId: communication_queues_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of queue.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+  /communication/queues/{id}/items:
+    get:
+      tags:
+      - queues
+      description: Obtain information about queue items.
+      operationId: communication_queues_id_items_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of queue.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      - name: limit
+        in: query
+        description: The amount of queue items to be returned.
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          example: 10
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    post:
+      tags:
+      - queues
+      description: Create queue item.
+      operationId: communication_queues_id_items_post
+      parameters:
+      - name: id
+        in: path
+        description: Id of queue.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+  /communication/items/{id}:
+    get:
+      tags:
+      - queues
+      description: Get information about a queue item.
+      operationId: communication_items_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of item.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    put:
+      tags:
+      - queues
+      description: Change metadata of queue item.
+      operationId: communication_items_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of item.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+    delete:
+      tags:
+      - queues
+      description: Remove queue item.
+      operationId: communication_items_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of item.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+      x-openapi-router-controller: communication_module.controllers.queues_controller
+  /communication/channels:
+    get:
+      tags:
+      - channels
+      description: Obtain information about channels.
+      operationId: communication_channels_get
+      parameters:
+      - name: limit
+        in: query
+        description: The amount of channels to be returned.
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          example: 10
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    post:
+      tags:
+      - channels
+      description: Create a channel.
+      operationId: communication_channels_post
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+  /communication/channels/{id}:
+    get:
+      tags:
+      - channels
+      description: Obtain information about a channel.
+      operationId: communication_channels_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of channel.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    put:
+      tags:
+      - channels
+      description: Change metadata of a channel.
+      operationId: communication_channels_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of channel.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    delete:
+      tags:
+      - channels
+      description: Remove a channel.
+      operationId: communication_channels_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of channel.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+  /communication/channels/{id}/messages:
+    get:
+      tags:
+      - channels
+      description: Obtain information about messages.
+      operationId: communication_channels_id_messages_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of channel.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      - name: limit
+        in: query
+        description: The amount of messages to be returned.
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          example: 10
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+                x-content-type: application/json
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    post:
+      tags:
+      - channels
+      description: Create a message.
+      operationId: communication_channels_id_messages_post
+      parameters:
+      - name: id
+        in: path
+        description: Id of channel.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+  /communication/messages/{id}:
+    get:
+      tags:
+      - channels
+      description: Get information about a message.
+      operationId: communication_messages_id_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of message.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    put:
+      tags:
+      - channels
+      description: Change metadata of a message.
+      operationId: communication_messages_id_put
+      parameters:
+      - name: id
+        in: path
+        description: Id of message.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+    delete:
+      tags:
+      - channels
+      description: Remove a message.
+      operationId: communication_messages_id_delete
+      parameters:
+      - name: id
+        in: path
+        description: Id of message.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+  /communication/messages/{id}/broadcast:
+    get:
+      tags:
+      - channels
+      description: Broadcast a message.
+      operationId: communication_messages_id_broadcast_get
+      parameters:
+      - name: id
+        in: path
+        description: Id of message.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-openapi-router-controller: communication_module.controllers.channels_controller
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          format: string
+          example: Communication Service Component is up!
+      example:
+        status: Communication Service Component is up!
+    Dataset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        label:
+          type: string
+          example: CORD-19
+        fileName:
+          type: string
+          example: dataset.csv
+        dateCreated:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        dateModified:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+      description: Model of a dataset metadata.
+    Job:
+      required:
+      - dateCreated
+      - dateModified
+      - id
+      - kind
+      - label
+      - status
+      - user
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        user:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        label:
+          type: string
+          example: Topic modeling CORD-19.
+        description:
+          type: string
+          example: Model trained on 40k scientific papers about COVID-19.
+        kind:
+          type: string
+          example: tml
+        model:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        dataSource:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        dataSample:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        status:
+          type: string
+          example: waiting
+        output:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        dateCreated:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        dateModified:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+      description: Model of a job.
+    Tasks:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Task metadata.
+    Topic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Topic metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+    Queue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Queue metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Event metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Item metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+    Channel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Channel metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params:
+          type: object
+          example: {}
+      description: Message metadata.
+      example:
+        id: 4baa97f6-c10f-11ea-b3de-0242ac130004
+        params: {}
+
