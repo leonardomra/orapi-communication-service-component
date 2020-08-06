@@ -1,10 +1,13 @@
 import connexion
 import six
-
+import os
+import json
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
+from orcomm_module.orcommunicator import ORCommunicator
 
+orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
     """communication_events_id_broadcast_get
@@ -78,7 +81,21 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     """
     if connexion.request.is_json:
         body = str.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    else:
+        body = json.loads(body)
+    
+    print(connexion.request.headers, flush=True)
+    print(body, flush=True)
+    
+    response = orcomm.topic.tuneTopic(connexion.request.headers, body)
+    if response.Type == 'SubscriptionConfirmation':
+        return orcomm.topic.confirmSubscription(response)
+    elif response.Type == 'Notification':
+        response.Subject = ''
+        response.Message = {'minha mensagem': 'ok'}
+        return orcomm.topic.broadcastEvent(response)
+    elif response.Type == 'UnsubscribeConfirmation':
+         return orcomm.topic.unsubscribe(response)
 
 
 def communication_topics_get(limit=None):  # noqa: E501
