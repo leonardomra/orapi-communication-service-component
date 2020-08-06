@@ -91,11 +91,12 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     if response.Type == 'SubscriptionConfirmation':
         return orcomm.topic.confirmSubscription(response)
     elif response.Type == 'Notification':
-        response.Subject = ''
-        response.Message = {'minha mensagem': 'ok'}
-        return orcomm.topic.broadcastEvent(response)
+        #response.Subject = ''
+        #response.Message = json.dumps({'minha mensagem': 'ok'})
+        #return orcomm.topic.broadcastEvent(response)
+        return "will return to "
     elif response.Type == 'UnsubscribeConfirmation':
-         return orcomm.topic.unsubscribe(response)
+        return orcomm.topic.unsubscribe(response)
 
 
 def communication_topics_get(limit=None):  # noqa: E501
