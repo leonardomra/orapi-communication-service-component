@@ -16,3 +16,6 @@ class ORQueue():
 
     def pullItem(self):
         pass
+
+    def getResource(self):
+        return self.queue

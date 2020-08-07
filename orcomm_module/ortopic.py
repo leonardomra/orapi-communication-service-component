@@ -61,3 +61,6 @@ class ORTopic():
         return self.sns.unsubscribe(
             SubscriptionArn = response.SubscriptionArn,
         )
+
+    def getResource(self):
+        return self.sns
