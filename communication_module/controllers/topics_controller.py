@@ -6,8 +6,11 @@ from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
 from orcomm_module.orcommunicator import ORCommunicator
+from orcomm_module.oritem import ORItem
 
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
+
+
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
     """communication_events_id_broadcast_get
@@ -84,7 +87,7 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     else:
         body = json.loads(body)
     
-    print(connexion.request.headers, flush=True)
+    #print(connexion.request.headers, flush=True)
     print(body, flush=True)
     
     response = orcomm.topic.tuneTopic(connexion.request.headers, body)
@@ -94,6 +97,16 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         #response.Subject = ''
         #response.Message = json.dumps({'minha mensagem': 'ok'})
         #return orcomm.topic.broadcastEvent(response)
+        
+        
+        # verify if Job is in DB
+        # determine which queue should the job go
+        # send the job to queue
+        # update status of job in DB
+        
+        
+        
+        
         return "will return to "
     elif response.Type == 'UnsubscribeConfirmation':
         return orcomm.topic.unsubscribe(response)
