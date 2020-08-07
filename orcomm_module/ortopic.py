@@ -6,7 +6,7 @@ import boto3
 class ORTopic():
 
     def __init__(self, AWS_REGION=None, AWS_ACCESS_KEY=None, AWS_SECRET_KEY=None, TOPIC_ARN=None):
-        self.sns = boto3.sns(
+        self.sns = boto3.client(
             'sns',
             region_name=AWS_REGION,
             aws_access_key_id=AWS_ACCESS_KEY,

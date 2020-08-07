@@ -9,7 +9,8 @@ from orcomm_module.orcommunicator import ORCommunicator
 from orcomm_module.oritem import ORItem
 
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
-
+orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
+orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
 
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
