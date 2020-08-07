@@ -42,9 +42,32 @@ if jobTask == 'train':
 elif  jobTask == 'analyse':
     print('Predict Queue')
 
-
-
-
+'''
+{   
+    "Type": "Notification", 
+    "MessageId": "7e6ed391-9e73-51d6-a62b-8437b6e8b596", 
+    "TopicArn": "arn:aws:sns:eu-central-1:773905262711:Jobs", 
+    "Subject": "Send Job", 
+    "Message": {
+        "_id": "0598789d-2cb2-412a-9b90-b61ec40274d8", 
+        "_user": "767f245a-cc82-11ea-a60b-bf77def8d078", 
+        "_label": "my label", 
+        "_description": "my description", 
+        "_kind": "tml", 
+        "_model": "cb2ef793-125b-44a0-b46e-d5f134fc1db4", 
+        "_data_source": "41e2e1e6-8581-4909-9fc3-166d9670b8c5", 
+        "_data_sample": "ecc26842-28a4-41b5-95ea-57233943267c", 
+        "_status": "waiting", 
+        "_output": null, 
+        "_date_created": null, 
+        "_date_modified": null, 
+        "task": "train"}, 
+    "Timestamp": "2020-08-06T15:48:43.799Z", 
+    "SignatureVersion": "1", 
+    "Signature": "mihASNRgDlwF26c7AcELVaPREVMBXk1L9WW6nQAjMzv1Z9PVZ8kI8p7SNkmlhLtuJnhIgwoFWVj3mQyQwNREAwdyEfg7LFgBvoMHM4OnCkuuBVq9bUXVspdfYDHWJ8hNmk7nyf0kQRrocH0OYFlhb/QTx5JPerEQD4CkUhIGU+h1dVw8FulmYti7oRypItAc/dHVg3RmkVVefXCY6V2se6wZmq/wd619TaYp+D5x4YN1NNWaUjCWU/fVy1ozhUeY/LPkSoUUDKru3pmArCVoUq8oOJQbrGghlPAez5nfLkJelEHHeLSeTSmTiO7FusZt4OkGo2MSXcJWuVrPZ8Hk4A==", 
+    "SigningCertURL": "https://sns.eu-central-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem", 
+    "UnsubscribeURL": "https://sns.eu-central-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-central-1:773905262711:Jobs:00ad30b7-9bc1-48e6-8613-145056f8385e"}
+'''
 
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
