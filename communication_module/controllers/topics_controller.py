@@ -7,10 +7,45 @@ from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
 from orcomm_module.orcommunicator import ORCommunicator
 from orcomm_module.oritem import ORItem
+from dbhandler.mysql_handler import MySQLHandler
 
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
 orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
 orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
+
+
+db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
+
+checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
+params1 = ('0598789d-2cb2-412a-9b90-b61ec40274d8',)
+results = db.get(checkJobQuery, params1)
+jobId = None
+jobStatus = None
+jobTask = None
+
+if not results:
+    print('List is empty')
+else:
+    jobId = results[0][0]
+    jobStatus = results[0][1]
+    jobTask = results[0][2]
+
+updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
+params2 = ('queuing', jobId)
+db.update(updateJobQuery, params2)
+
+if jobTask == 'train':
+    print('Train Queue')
+    item = ORItem()
+    item.MessageBody = 'Train'
+    orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_NAME']).pushItem(item)
+elif  jobTask == 'analyse':
+    print('Predict Queue')
+
+
+
+
+
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
     """communication_events_id_broadcast_get
@@ -94,13 +129,25 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     if response.Type == 'SubscriptionConfirmation':
         return orcomm.topic.confirmSubscription(response)
     elif response.Type == 'Notification':
-        #response.Subject = ''
-        #response.Message = json.dumps({'minha mensagem': 'ok'})
-        #return orcomm.topic.broadcastEvent(response)
-        
-        
+       
+        jobId = None
+        jobStatus = None
+        jobTask = None
         # verify if Job is in DB
+        checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
+        params1 = (body.Message._id,)
+        results = db.get(checkJobQuery, params1)
+        if not results:
+            print('List is empty')
+        else:
+            jobId = results[0][0]
+            jobStatus = results[0][1]
+            jobTask = results[0][2]
         # determine which queue should the job go
+        updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
+        params2 = ('queuing', body.Message._id,)
+        db.update(updateJobQuery, params2)
+        
         # send the job to queue
         # update status of job in DB
         

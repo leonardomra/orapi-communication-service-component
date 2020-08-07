@@ -12,7 +12,8 @@ class ORQueue():
         self.queue = sqs.get_queue_by_name(QueueName=QUEUE_NAME)
 
     def pushItem(self, oritem):
-        self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes)
+        self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes, MessageGroupId=oritem.MessageBody)
+        
 
     def pullItem(self):
         pass
