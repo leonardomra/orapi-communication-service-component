@@ -70,3 +70,4 @@ environment.txt
 run.sh
 .env
 ws.code-workspace
+.vscode
