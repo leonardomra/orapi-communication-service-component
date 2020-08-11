@@ -10,37 +10,12 @@ from orcomm_module.oritem import ORItem
 from dbhandler.mysql_handler import MySQLHandler
 
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
+# add queues & topics
 orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
 orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
-
-
+orcomm.addTopic(os.environ['JOBS_NAME_TOPIC'], os.environ['JOBS_ARN_TOPIC'])
+# init db
 db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
-
-checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
-params1 = ('0598789d-2cb2-412a-9b90-b61ec40274d8',)
-results = db.get(checkJobQuery, params1)
-jobId = None
-jobStatus = None
-jobTask = None
-
-if not results:
-    print('List is empty')
-else:
-    jobId = results[0][0]
-    jobStatus = results[0][1]
-    jobTask = results[0][2]
-
-updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
-params2 = ('queuing', jobId)
-db.update(updateJobQuery, params2)
-
-if jobTask == 'train':
-    print('Train Queue')
-    item = ORItem()
-    item.MessageBody = 'Train'
-    orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_NAME']).pushItem(item)
-elif  jobTask == 'analyse':
-    print('Predict Queue')
 
 '''
 {   
@@ -140,47 +115,58 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
 
     :rtype: str
     """
-    if connexion.request.is_json:
-        body = str.from_dict(connexion.request.get_json())  # noqa: E501
-    else:
+    
+    if not connexion.request.is_json:
         body = json.loads(body)
+        body['Message'] = json.loads(body['Message'])
     
-    #print(connexion.request.headers, flush=True)
-    print(body, flush=True)
-    
-    response = orcomm.topic.tuneTopic(connexion.request.headers, body)
+    response = orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).tuneTopic(connexion.request.headers, body)
     if response.Type == 'SubscriptionConfirmation':
-        return orcomm.topic.confirmSubscription(response)
+        return orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).confirmSubscription(response)
     elif response.Type == 'Notification':
-       
         jobId = None
-        jobStatus = None
         jobTask = None
         # verify if Job is in DB
         checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
-        params1 = (body.Message._id,)
+        params1 = (body['Message']['_id'],)
         results = db.get(checkJobQuery, params1)
         if not results:
             print('List is empty')
         else:
             jobId = results[0][0]
-            jobStatus = results[0][1]
             jobTask = results[0][2]
         # determine which queue should the job go
         updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
-        params2 = ('queuing', body.Message._id,)
+        params2 = ('queuing', body['Message']['_id'],)
         db.update(updateJobQuery, params2)
-        
         # send the job to queue
-        # update status of job in DB
-        
-        
-        
-        
-        return "will return to "
+        queueResponse = None
+        item = ORItem()
+        item.MessageAttributes = {
+            'jobId': {
+                'StringValue': jobId,
+                'DataType': 'String'
+            },
+            'jobStatus': {
+                'StringValue': 'queuing',
+                'DataType': 'String'
+            },
+            'jobTask': {
+                'StringValue': jobTask,
+                'DataType': 'String'
+            } 
+        }
+        if jobTask == 'train':
+            item.MessageBody = 'Train'
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_NAME']).pushItem(item)
+        elif jobTask == 'analyse':
+            item.MessageBody = 'Analyse'
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_NAME']).pushItem(item)
+        return queueResponse
     elif response.Type == 'UnsubscribeConfirmation':
-        return orcomm.topic.unsubscribe(response)
-
+        return orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).topic.unsubscribe(response)
+    else:
+        return 'bad request!', 400
 
 def communication_topics_get(limit=None):  # noqa: E501
     """communication_topics_get

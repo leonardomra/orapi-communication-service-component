@@ -12,11 +12,11 @@ class ORQueue():
         self.queue = sqs.get_queue_by_name(QueueName=QUEUE_NAME)
 
     def pushItem(self, oritem):
-        self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes, MessageGroupId=oritem.MessageBody)
+        return self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes, MessageGroupId=oritem.MessageBody)
         
-
-    def pullItem(self):
-        pass
-
+    def pullItem(self, messageAttributeNames = []):
+        for message in self.queue.receive_messages(MessageAttributeNames=['Author']):
+            pass
+        
     def getResource(self):
         return self.queue

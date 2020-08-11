@@ -36,6 +36,7 @@ class ORCommunicator():
         return self.queues
 
     def getTopic(self, topicName):
+        topic: ORTopic = self.topics[topicName]
         return self.topics[topicName]
 
     def getChannel(self, channelName):
