@@ -138,7 +138,7 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
             queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
         return queueResponse
     elif response.Type == 'UnsubscribeConfirmation':
-        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).topic.unsubscribe(response)
+        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
     else:
         return 'bad request!', 400
 
