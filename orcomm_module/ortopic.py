@@ -15,7 +15,7 @@ class ORTopic():
         self.TopicArn = TOPIC_ARN
 
     def broadcastEvent(self, response):
-        sns = self.sns.publish(
+        self.sns.publish(
             TopicArn=self.TopicArn,
             Subject=response.Subject,
             Message=json.dumps({ "default": response.Message }),

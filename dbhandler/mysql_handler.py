@@ -1,4 +1,5 @@
 import mysql.connector
+from mysql.connector import errorcode
 
 class MySQLHandler():
     
@@ -13,7 +14,7 @@ class MySQLHandler():
         self.cnx = None
         self.cursor = None
 
-    def dbconnect(self):
+    def dbconnect(self):   
         try:
             self.cnx = mysql.connector.connect(**self.config)
             self.cursor = self.cnx.cursor()

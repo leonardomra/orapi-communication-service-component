@@ -1,48 +1,21 @@
 import connexion
 import six
 import os
+import time
 import json
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
-from orcomm_module.orcommunicator import ORCommunicator
 from orcomm_module.oritem import ORItem
+from orcomm_module.orcommunicator import ORCommunicator
 from dbhandler.mysql_handler import MySQLHandler
 
+db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
 # add queues & topics
 orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
 orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
 orcomm.addTopic(os.environ['JOBS_NAME_TOPIC'], os.environ['JOBS_ARN_TOPIC'])
-# init db
-db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
-
-'''
-{   
-    "Type": "Notification", 
-    "MessageId": "7e6ed391-9e73-51d6-a62b-8437b6e8b596", 
-    "TopicArn": "arn:aws:sns:eu-central-1:773905262711:Jobs", 
-    "Subject": "Send Job", 
-    "Message": {
-        "_id": "0598789d-2cb2-412a-9b90-b61ec40274d8", 
-        "_user": "767f245a-cc82-11ea-a60b-bf77def8d078", 
-        "_label": "my label", 
-        "_description": "my description", 
-        "_kind": "tml", 
-        "_model": "cb2ef793-125b-44a0-b46e-d5f134fc1db4", 
-        "_data_source": "41e2e1e6-8581-4909-9fc3-166d9670b8c5", 
-        "_data_sample": "ecc26842-28a4-41b5-95ea-57233943267c", 
-        "_status": "waiting", 
-        "_output": null, 
-        "_date_created": null, 
-        "_date_modified": null, 
-        "task": "train"}, 
-    "Timestamp": "2020-08-06T15:48:43.799Z", 
-    "SignatureVersion": "1", 
-    "Signature": "mihASNRgDlwF26c7AcELVaPREVMBXk1L9WW6nQAjMzv1Z9PVZ8kI8p7SNkmlhLtuJnhIgwoFWVj3mQyQwNREAwdyEfg7LFgBvoMHM4OnCkuuBVq9bUXVspdfYDHWJ8hNmk7nyf0kQRrocH0OYFlhb/QTx5JPerEQD4CkUhIGU+h1dVw8FulmYti7oRypItAc/dHVg3RmkVVefXCY6V2se6wZmq/wd619TaYp+D5x4YN1NNWaUjCWU/fVy1ozhUeY/LPkSoUUDKru3pmArCVoUq8oOJQbrGghlPAez5nfLkJelEHHeLSeTSmTiO7FusZt4OkGo2MSXcJWuVrPZ8Hk4A==", 
-    "SigningCertURL": "https://sns.eu-central-1.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem", 
-    "UnsubscribeURL": "https://sns.eu-central-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-central-1:773905262711:Jobs:00ad30b7-9bc1-48e6-8613-145056f8385e"}
-'''
 
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
@@ -118,11 +91,14 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     
     if not connexion.request.is_json:
         body = json.loads(body)
-        body['Message'] = json.loads(body['Message'])
-    
-    response = orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).tuneTopic(connexion.request.headers, body)
+        if 'Message' in body:
+            try:
+                body['Message'] = json.loads(body['Message'])
+            except json.decoder.JSONDecodeError:
+                print('Message cannot be converted into JSON')
+    response = orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).tuneTopic(connexion.request.headers, body)
     if response.Type == 'SubscriptionConfirmation':
-        return orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).confirmSubscription(response)
+        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).confirmSubscription(response)
     elif response.Type == 'Notification':
         jobId = None
         jobTask = None
@@ -130,9 +106,7 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
         params1 = (body['Message']['_id'],)
         results = db.get(checkJobQuery, params1)
-        if not results:
-            print('List is empty')
-        else:
+        if results:
             jobId = results[0][0]
             jobTask = results[0][2]
         # determine which queue should the job go
@@ -154,17 +128,17 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
             'jobTask': {
                 'StringValue': jobTask,
                 'DataType': 'String'
-            } 
+            }
         }
         if jobTask == 'train':
-            item.MessageBody = 'Train'
-            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_NAME']).pushItem(item)
+            item.MessageBody = 'Train_' + str(int(time.time()))
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
         elif jobTask == 'analyse':
             item.MessageBody = 'Analyse'
-            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_NAME']).pushItem(item)
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
         return queueResponse
     elif response.Type == 'UnsubscribeConfirmation':
-        return orcomm.getTopic(os.environ['JOBS_NAME_TOPIC']).topic.unsubscribe(response)
+        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).topic.unsubscribe(response)
     else:
         return 'bad request!', 400
 

@@ -5,6 +5,9 @@ class ORItem():
         self._body = None
         self._messageAttributes = {}
         self._messageId = None
+        self._messageIsActive = False
+        self._receipt_handle = None
+        self._queue_url = None
 
     @property
     def Attributes(self) -> {}:
@@ -56,3 +59,38 @@ class ORItem():
     @MessageId.setter
     def MessageId(self, _messageId: str):
         self._messageId = _messageId
+
+    @property
+    def MessageIsActive(self) -> bool:
+        return self._messageIsActive
+
+    @MessageIsActive.setter
+    def MessageIsActive(self, _messageIsActive: bool):
+        self._messageIsActive = _messageIsActive
+
+    @property
+    def ReceiptHandle(self) -> bool:
+        return self._receipt_handle
+
+    @ReceiptHandle.setter
+    def ReceiptHandle(self, _receipt_handle: bool):
+        self._receipt_handle = _receipt_handle
+
+    @property
+    def QueueUrl(self) -> bool:
+        return self._queue_url
+
+    @QueueUrl.setter
+    def QueueUrl(self, _queue_url: bool):
+        self._queue_url = _queue_url
+
+    def summarize(self):
+        return {
+            'Attributes': self._attributes,
+            'MessageAttributes': self._messageAttributes,
+            'MessageBody': self._body,
+            'MessageId': self._messageId,
+            'MessageIsActive': self._messageIsActive,
+            'ReceiptHandle': self._receipt_handle,
+            'QueueUrl': self._queue_url,
+        }

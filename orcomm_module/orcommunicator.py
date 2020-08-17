@@ -16,7 +16,7 @@ class ORCommunicator():
         
     def addTopic(self, topicName=None, topicArn=None):
         topic = ORTopic(self.awsRegion, self.awsAccessKey, self.awsSecretKey, topicArn)
-        self.topics[topicName] = topic
+        self.topics[topicArn] = topic
 
     def addChannel(self, channelName):
         channel = ORChannel(channelName)
@@ -24,7 +24,7 @@ class ORCommunicator():
 
     def addQueue(self, queueName=None, queueArn=None):
         queue = ORQueue(self.awsRegion, self.awsAccessKey, self.awsSecretKey, queueName)
-        self.queues[queueName] = queue
+        self.queues[queueArn] = queue
 
     def getTopics(self):
         return self.topics
@@ -35,14 +35,18 @@ class ORCommunicator():
     def getQueues(self):
         return self.queues
 
-    def getTopic(self, topicName):
-        topic: ORTopic = self.topics[topicName]
-        return self.topics[topicName]
+    def itemsForQueue(self, queueName, queueArn, messageAttributeNames=[], limit=1, deleteMsgs=False):
+        if queueArn not in self.queues:
+            self.queues[queueArn] = ORQueue(self.awsRegion, self.awsAccessKey, self.awsSecretKey, queueName)
+        return self.queues[queueArn].pullItems(messageAttributeNames, limit, deleteMsgs)
+
+    def getTopic(self, topicArn):
+        return self.topics[topicArn]
 
     def getChannel(self, channelName):
         return self.channels[channelName]
 
-    def getQueue(self, queueName):
-        return self.queues[queueName]
+    def getQueue(self, queueArn):
+        return self.queues[queueArn]
 
     
