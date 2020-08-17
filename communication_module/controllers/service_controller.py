@@ -4,6 +4,7 @@ import six
 from communication_module.models.health import Health  # noqa: E501
 from communication_module import util
 
+from flask import jsonify
 
 def health_get():  # noqa: E501
     """health_get
@@ -13,4 +14,8 @@ def health_get():  # noqa: E501
 
     :rtype: Health
     """
-    return 'do some magic!'
+    response = {
+        'status' : 'Communication Service Component is up!'
+    }
+    print('Heatlh check executed.', flush=True)
+    return jsonify(response)

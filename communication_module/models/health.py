@@ -22,7 +22,7 @@ class Health(Model):
         :type status: Object
         """
         self.swagger_types = {
-            'status': Object
+            'status': {}
         }
 
         self.attribute_map = {

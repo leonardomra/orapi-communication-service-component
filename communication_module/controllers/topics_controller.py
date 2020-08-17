@@ -1,9 +1,21 @@
 import connexion
 import six
-
+import os
+import time
+import json
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
+from orcomm_module.oritem import ORItem
+from orcomm_module.orcommunicator import ORCommunicator
+from dbhandler.mysql_handler import MySQLHandler
+
+db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
+orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
+# add queues & topics
+orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
+orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
+orcomm.addTopic(os.environ['JOBS_NAME_TOPIC'], os.environ['JOBS_ARN_TOPIC'])
 
 
 def communication_events_id_broadcast_get(id):  # noqa: E501
@@ -76,10 +88,59 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
 
     :rtype: str
     """
-    if connexion.request.is_json:
-        body = str.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
-
+    
+    if not connexion.request.is_json:
+        body = json.loads(body)
+        if 'Message' in body:
+            try:
+                body['Message'] = json.loads(body['Message'])
+            except json.decoder.JSONDecodeError:
+                print('Message cannot be converted into JSON')
+    response = orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).tuneTopic(connexion.request.headers, body)
+    if response.Type == 'SubscriptionConfirmation':
+        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).confirmSubscription(response)
+    elif response.Type == 'Notification':
+        jobId = None
+        jobTask = None
+        # verify if Job is in DB
+        checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
+        params1 = (body['Message']['_id'],)
+        results = db.get(checkJobQuery, params1)
+        if results:
+            jobId = results[0][0]
+            jobTask = results[0][2]
+        # determine which queue should the job go
+        updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
+        params2 = ('queuing', body['Message']['_id'],)
+        db.update(updateJobQuery, params2)
+        # send the job to queue
+        queueResponse = None
+        item = ORItem()
+        item.MessageAttributes = {
+            'jobId': {
+                'StringValue': jobId,
+                'DataType': 'String'
+            },
+            'jobStatus': {
+                'StringValue': 'queuing',
+                'DataType': 'String'
+            },
+            'jobTask': {
+                'StringValue': jobTask,
+                'DataType': 'String'
+            }
+        }
+        if jobTask == 'train':
+            item.MessageBody = 'Train_' + str(int(time.time()))
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
+        elif jobTask == 'analyse':
+            item.MessageBody = 'Analyse'
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
+        return queueResponse
+    elif response.Type == 'UnsubscribeConfirmation':
+        return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
+    else:
+        return 'bad request!', 400
 
 def communication_topics_get(limit=None):  # noqa: E501
     """communication_topics_get

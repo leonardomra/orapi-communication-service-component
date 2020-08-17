@@ -1,10 +1,15 @@
 import connexion
 import six
-
+import os
+import json
 from communication_module.models.item import Item  # noqa: E501
 from communication_module.models.queue import Queue  # noqa: E501
 from communication_module import util
+from orcomm_module.orcommunicator import ORCommunicator
+from dbhandler.mysql_handler import MySQLHandler
 
+#db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
+orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
 
 def communication_items_id_delete(id):  # noqa: E501
     """communication_items_id_delete
@@ -84,7 +89,7 @@ def communication_queues_id_get(id):  # noqa: E501
     return 'do some magic!'
 
 
-def communication_queues_id_items_get(id, limit=None):  # noqa: E501
+def communication_queues_id_items_get(id_=None, limit=None):  # noqa: E501
     """communication_queues_id_items_get
 
     Obtain information about queue items. # noqa: E501
@@ -96,7 +101,14 @@ def communication_queues_id_items_get(id, limit=None):  # noqa: E501
 
     :rtype: List[Item]
     """
-    return 'do some magic!'
+    queue = Queue()
+    queue.id = id_
+    queue.params = { 'limit': limit }
+    items = orcomm.itemsForQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'], ['jobId', 'jobStatus', 'jobTask', 'order'], queue.params['limit'], False)
+    response = []
+    for item in items:
+        response.append(json.dumps(item.summarize()))
+    return response
 
 
 def communication_queues_id_items_post(id):  # noqa: E501
