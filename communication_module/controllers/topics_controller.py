@@ -2,6 +2,7 @@ import connexion
 import six
 import os
 import time
+import uuid
 import json
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
@@ -109,6 +110,7 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         if results:
             jobId = results[0][0]
             jobTask = results[0][2]
+        print(jobTask, flush=True)
         # determine which queue should the job go
         updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
         params2 = ('queuing', body['Message']['_id'],)
@@ -128,13 +130,17 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
             'jobTask': {
                 'StringValue': jobTask,
                 'DataType': 'String'
-            }
+            },
+            'JobModifier': {
+                'StringValue': str(uuid.uuid4()),
+                'DataType': 'String'
+            } 
         }
         if jobTask == 'train':
             item.MessageBody = 'Train_' + str(int(time.time()))
             queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
         elif jobTask == 'analyse':
-            item.MessageBody = 'Analyse'
+            item.MessageBody = 'Analyse_' + str(int(time.time()))
             queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
         return queueResponse
     elif response.Type == 'UnsubscribeConfirmation':

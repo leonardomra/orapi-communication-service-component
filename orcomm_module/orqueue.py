@@ -2,6 +2,7 @@ import boto3
 import json
 import time
 from orcomm_module.oritem import ORItem
+import uuid
 
 class ORQueue():
 
@@ -15,7 +16,8 @@ class ORQueue():
         self.queue = sqs.get_queue_by_name(QueueName=QUEUE_NAME)
 
     def pushItem(self, oritem):
-        return self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes, MessageGroupId=str(int(time.time())))
+        return self.queue.send_message(MessageBody=oritem.MessageBody, MessageAttributes=oritem.MessageAttributes, MessageGroupId=str(uuid.uuid4()))
+        
         
     def pullItems(self, messageAttributeNames=[], limit=None, deleteMsgs=False):
         messages = self.queue.receive_messages(MessageAttributeNames=messageAttributeNames, MaxNumberOfMessages=limit)
