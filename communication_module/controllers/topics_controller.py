@@ -117,7 +117,6 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         elif body['Subject'] == 'Finish Job':
             print('Job is finished', jobId, flush=True)
             return 'Job is finished'
-        return sendStartJobToQueue(body, jobId, jobTask)
     elif response.Type == 'UnsubscribeConfirmation':
         return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
     else:
