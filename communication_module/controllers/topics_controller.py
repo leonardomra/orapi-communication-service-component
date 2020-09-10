@@ -111,7 +111,6 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         if results:
             jobId = results[0][0]
             jobTask = results[0][2]
-        print(jobTask, flush=True)
         if body['Subject'] == 'Send Job':
             return sendStartJobToQueue(body, jobId, jobTask)
         elif body['Subject'] == 'Finish Job':
