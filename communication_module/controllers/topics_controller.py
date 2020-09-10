@@ -2,6 +2,7 @@ import connexion
 import six
 import os
 import time
+import uuid
 import json
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
@@ -93,6 +94,7 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         body = json.loads(body)
         if 'Message' in body:
             try:
+                print('Subject: ', body['Subject'], flush=True )
                 body['Message'] = json.loads(body['Message'])
             except json.decoder.JSONDecodeError:
                 print('Message cannot be converted into JSON')
@@ -109,38 +111,49 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         if results:
             jobId = results[0][0]
             jobTask = results[0][2]
-        # determine which queue should the job go
-        updateJobQuery = ("UPDATE Job SET status = %s WHERE id = %s")
-        params2 = ('queuing', body['Message']['_id'],)
-        db.update(updateJobQuery, params2)
-        # send the job to queue
-        queueResponse = None
-        item = ORItem()
-        item.MessageAttributes = {
-            'jobId': {
-                'StringValue': jobId,
-                'DataType': 'String'
-            },
-            'jobStatus': {
-                'StringValue': 'queuing',
-                'DataType': 'String'
-            },
-            'jobTask': {
-                'StringValue': jobTask,
-                'DataType': 'String'
-            }
-        }
-        if jobTask == 'train':
-            item.MessageBody = 'Train_' + str(int(time.time()))
-            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
-        elif jobTask == 'analyse':
-            item.MessageBody = 'Analyse'
-            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
-        return queueResponse
+        if body['Subject'] == 'Send Job':
+            return sendStartJobToQueue(body, jobId, jobTask)
+        elif body['Subject'] == 'Finish Job':
+            print('Job is finished', jobId, flush=True)
+            return 'Job is finished'
     elif response.Type == 'UnsubscribeConfirmation':
         return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
     else:
         return 'bad request!', 400
+
+def sendStartJobToQueue(body, jobId, jobTask):
+    # determine which queue should the job go
+    updateJobQuery = ('UPDATE Job SET status = %s WHERE id = %s')
+    params2 = ('queuing', body['Message']['_id'],)
+    db.update(updateJobQuery, params2)
+    # send the job to queue
+    queueResponse = None
+    item = ORItem()
+    item.MessageAttributes = {
+        'jobId': {
+            'StringValue': jobId,
+            'DataType': 'String'
+        },
+        'jobStatus': {
+            'StringValue': 'queuing',
+            'DataType': 'String'
+        },
+        'jobTask': {
+            'StringValue': jobTask,
+            'DataType': 'String'
+        },
+        'JobModifier': {
+            'StringValue': str(uuid.uuid4()),
+            'DataType': 'String'
+        } 
+    }
+    if jobTask == 'train':
+        item.MessageBody = 'Train_' + str(int(time.time()))
+        queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
+    elif jobTask == 'analyse':
+        item.MessageBody = 'Analyse_' + str(int(time.time()))
+        queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
+    return queueResponse
 
 def communication_topics_get(limit=None):  # noqa: E501
     """communication_topics_get
