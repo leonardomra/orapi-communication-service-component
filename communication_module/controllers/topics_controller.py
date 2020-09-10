@@ -4,6 +4,9 @@ import os
 import time
 import uuid
 import json
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from communication_module.models.event import Event  # noqa: E501
 from communication_module.models.topic import Topic  # noqa: E501
 from communication_module import util
@@ -104,22 +107,45 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
     elif response.Type == 'Notification':
         jobId = None
         jobTask = None
+        jobUser = None
         # verify if Job is in DB
-        checkJobQuery = ("SELECT id, status, task FROM Job WHERE id = %s")
+        checkJobQuery = ("SELECT id, status, task, user FROM Job WHERE id = %s")
         params1 = (body['Message']['_id'],)
         results = db.get(checkJobQuery, params1)
         if results:
             jobId = results[0][0]
             jobTask = results[0][2]
+            jobUser = results[0][3]
         if body['Subject'] == 'Send Job':
+            print('Job has started', jobId, flush=True)
+            sendEmailToUser(jobUser, "Your job (id " + jobId + ") was sent to the queue. Please wait until it's completed.")
             return sendStartJobToQueue(body, jobId, jobTask)
         elif body['Subject'] == 'Finish Job':
             print('Job is finished', jobId, flush=True)
+            sendEmailToUser(jobUser, "Your job (id " + jobId + ") is finished.")
             return 'Job is finished'
     elif response.Type == 'UnsubscribeConfirmation':
         return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
     else:
         return 'bad request!', 400
+
+def sendEmailToUser(jobUser, body):
+    getUserQuery = ("SELECT id, firstName, email FROM User WHERE id = %s")
+    params = (jobUser,)
+    results = db.get(getUserQuery, params)
+    firstName = results[0][1]
+    userEmail = results[0][2]
+    print(results, flush=True)
+    smtp = smtplib.SMTP_SSL(host=os.environ['SMTP_SERVER'], port=os.environ['SMTP_SERVER_PORT'])
+    smtp.login(os.environ['SMTP_USERNAME'], os.environ['SMTP_PASSWORD'])
+    msg = MIMEMultipart()
+    msg['From'] = os.environ['SMTP_USERNAME']
+    msg['To'] = userEmail
+    msg['Subject'] = 'OpenResearchAPI' 
+    msg.attach(MIMEText('Hi, ' +  body, 'plain'))
+    smtp.send_message(msg)
+    del msg
+    smtp.quit()
 
 def sendStartJobToQueue(body, jobId, jobTask):
     # determine which queue should the job go
