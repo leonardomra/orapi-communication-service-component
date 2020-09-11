@@ -108,21 +108,38 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
         jobId = None
         jobTask = None
         jobUser = None
+        jobOutput = None
         # verify if Job is in DB
-        checkJobQuery = ("SELECT id, status, task, user FROM Job WHERE id = %s")
-        params1 = (body['Message']['_id'],)
-        results = db.get(checkJobQuery, params1)
+        checkJobQuery = ("SELECT id, status, task, user, kind, output, model FROM Job WHERE id = %s")
+        params = (body['Message']['_id'],)
+        results = db.get(checkJobQuery, params)
         if results:
             jobId = results[0][0]
             jobTask = results[0][2]
             jobUser = results[0][3]
+            jobKind = results[0][4]
+            jobOutput = results[0][5]
+            jobModel = results[0][6]
         if body['Subject'] == 'Send Job':
             print('Job has started', jobId, flush=True)
-            sendEmailToUser(jobUser, "Your job (id " + jobId + ") was sent to the queue. Please wait until it's completed.")
-            return sendStartJobToQueue(body, jobId, jobTask)
+            sendEmailToUser(jobUser, "Your job (id " + jobId + ") was sent to the queue. Please wait until it's completed....")
+            return sendStartJobToQueue(body, jobId, jobTask, jobKind)
         elif body['Subject'] == 'Finish Job':
             print('Job is finished', jobId, flush=True)
-            sendEmailToUser(jobUser, "Your job (id " + jobId + ") is finished.")
+            #try:
+            message = None
+            dataParams = None
+            if jobTask == 'train':
+                dataParams = (jobModel,)
+                message = "Your job (id " + jobId + ") is finished. Download the model (id " + jobModel + ") here "
+            else:
+                dataParams = (jobOutput,)
+                message = "Your job (id " + jobId + ") is finished. Download the results (id " + jobOutput + ") here "
+            checkDataQuery = ("SELECT location FROM Data WHERE id = %s")
+            dataResults =  db.get(checkDataQuery, dataParams)
+            sendEmailToUser(jobUser, message + os.environ['S3BUCKET_URL'] + dataResults[0][0].replace('openresearch/', ''))
+            #except Exception as error:
+            #    print(error, flush=True)
             return 'Job is finished'
     elif response.Type == 'UnsubscribeConfirmation':
         return orcomm.getTopic(os.environ['JOBS_ARN_TOPIC']).unsubscribe(response)
@@ -147,7 +164,7 @@ def sendEmailToUser(jobUser, body):
     del msg
     smtp.quit()
 
-def sendStartJobToQueue(body, jobId, jobTask):
+def sendStartJobToQueue(body, jobId, jobTask, jobKind):
     # determine which queue should the job go
     updateJobQuery = ('UPDATE Job SET status = %s WHERE id = %s')
     params2 = ('queuing', body['Message']['_id'],)
@@ -166,6 +183,10 @@ def sendStartJobToQueue(body, jobId, jobTask):
         },
         'jobTask': {
             'StringValue': jobTask,
+            'DataType': 'String'
+        },
+        'jobKind': {
+            'StringValue': jobKind,
             'DataType': 'String'
         },
         'JobModifier': {
