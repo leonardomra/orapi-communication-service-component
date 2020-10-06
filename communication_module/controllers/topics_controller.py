@@ -17,8 +17,15 @@ from dbhandler.mysql_handler import MySQLHandler
 db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
 # add queues & topics
-orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
-orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
+# orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME'], os.environ['TRAIN_SQS_QUEUE_ARN'])
+# orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME'], os.environ['PREDICT_SQS_QUEUE_ARN'])
+#
+orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME_TML'], os.environ['TRAIN_SQS_QUEUE_ARN_TML'])
+orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME_TML'], os.environ['PREDICT_SQS_QUEUE_ARN_TML'])
+#
+orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME_QNA'], os.environ['TRAIN_SQS_QUEUE_ARN_QNA'])
+orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME_QNA'], os.environ['PREDICT_SQS_QUEUE_ARN_QNA'])
+#
 orcomm.addTopic(os.environ['JOBS_NAME_TOPIC'], os.environ['JOBS_ARN_TOPIC'])
 
 
@@ -129,15 +136,33 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
             #try:
             message = None
             dataParams = None
+            code = None
+            if 'code' in body['Message']:
+                code = body['Message']['code']
+            if 'message' in body['Message']:
+                print(body['Message']['message'], flush=True)
             if jobTask == 'train':
-                dataParams = (jobModel,)
-                message = "Your job (id " + jobId + ") is finished. Download the model (id " + jobModel + ") here "
+                if code != 'executed':
+                    if jobModel is None:
+                        message = "Your job (id " + jobId + ") is finished. Unfortunately, there was an error and your model could not be trained."
+                        sendEmailToUser(jobUser, message)
+                    else:
+                        message = "Your job (id " + jobId + ") is finished. Download the model (id " + jobModel + ") here "
+                        dataParams = (jobModel,)
+                        checkDataQuery = ("SELECT location FROM Data WHERE id = %s")
+                        dataResults =  db.get(checkDataQuery, dataParams)
+                        sendEmailToUser(jobUser, message + os.environ['S3BUCKET_URL'] + dataResults[0][0].replace('openresearch/', ''))
             else:
-                dataParams = (jobOutput,)
-                message = "Your job (id " + jobId + ") is finished. Download the results (id " + jobOutput + ") here "
-            checkDataQuery = ("SELECT location FROM Data WHERE id = %s")
-            dataResults =  db.get(checkDataQuery, dataParams)
-            sendEmailToUser(jobUser, message + os.environ['S3BUCKET_URL'] + dataResults[0][0].replace('openresearch/', ''))
+                if code != 'executed':
+                    if jobOutput is None:     
+                        message = "Your job (id " + jobId + ") is finished. Unfortunately, there was an error and your results were not computed."
+                        sendEmailToUser(jobUser, message)
+                    else:
+                        message = "Your job (id " + jobId + ") is finished. Download the results (id " + jobOutput + ") here "
+                        dataParams = (jobOutput,)
+                        checkDataQuery = ("SELECT location FROM Data WHERE id = %s")
+                        dataResults =  db.get(checkDataQuery, dataParams)
+                        sendEmailToUser(jobUser, message + os.environ['S3BUCKET_URL'] + dataResults[0][0].replace('openresearch/', ''))
             #except Exception as error:
             #    print(error, flush=True)
             return 'Job is finished'
@@ -196,10 +221,16 @@ def sendStartJobToQueue(body, jobId, jobTask, jobKind):
     }
     if jobTask == 'train':
         item.MessageBody = 'Train_' + str(int(time.time()))
-        queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN']).pushItem(item)
+        if jobKind == 'tml':
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN_TML']).pushItem(item)
+        elif jobKind == 'qna':  
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN_QNA']).pushItem(item)
     elif jobTask == 'analyse':
         item.MessageBody = 'Analyse_' + str(int(time.time()))
-        queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN']).pushItem(item)
+        if jobKind == 'tml':
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN_TML']).pushItem(item)
+        elif jobKind == 'qna':
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN_QNA']).pushItem(item)
     return queueResponse
 
 def communication_topics_get(limit=None):  # noqa: E501
