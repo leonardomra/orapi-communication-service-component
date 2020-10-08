@@ -143,12 +143,12 @@ def communication_events_post(body=None, x_amz_sns_message_type=None, x_amz_sns_
                 print(body['Message']['message'], flush=True)
             if jobTask == 'train':
                 if code != 'executed':
-                    if jobModel is None:
+                    if jobOutput is None:
                         message = "Your job (id " + jobId + ") is finished. Unfortunately, there was an error and your model could not be trained."
                         sendEmailToUser(jobUser, message)
                     else:
-                        message = "Your job (id " + jobId + ") is finished. Download the model (id " + jobModel + ") here "
-                        dataParams = (jobModel,)
+                        message = "Your job (id " + jobId + ") is finished. Download the model (id " + jobOutput + ") here "
+                        dataParams = (jobOutput,)
                         checkDataQuery = ("SELECT location FROM Data WHERE id = %s")
                         dataResults =  db.get(checkDataQuery, dataParams)
                         sendEmailToUser(jobUser, message + os.environ['S3BUCKET_URL'] + dataResults[0][0].replace('openresearch/', ''))
