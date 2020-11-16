@@ -26,6 +26,9 @@ orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME_TML'], os.environ['PREDICT_SQ
 orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME_QNA'], os.environ['TRAIN_SQS_QUEUE_ARN_QNA'])
 orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME_QNA'], os.environ['PREDICT_SQS_QUEUE_ARN_QNA'])
 #
+orcomm.addQueue(os.environ['TRAIN_SQS_QUEUE_NAME_NER'], os.environ['TRAIN_SQS_QUEUE_ARN_NER'])
+orcomm.addQueue(os.environ['PREDICT_SQS_QUEUE_NAME_NER'], os.environ['PREDICT_SQS_QUEUE_ARN_NER'])
+#
 orcomm.addTopic(os.environ['JOBS_NAME_TOPIC'], os.environ['JOBS_ARN_TOPIC'])
 
 
@@ -223,14 +226,18 @@ def sendStartJobToQueue(body, jobId, jobTask, jobKind):
         item.MessageBody = 'Train_' + str(int(time.time()))
         if jobKind == 'tml':
             queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN_TML']).pushItem(item)
-        elif jobKind == 'qna':  
+        elif jobKind == 'qna':
             queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN_QNA']).pushItem(item)
+        elif jobKind == 'ner':
+            queueResponse = orcomm.getQueue(os.environ['TRAIN_SQS_QUEUE_ARN_NER']).pushItem(item)
     elif jobTask == 'analyse':
         item.MessageBody = 'Analyse_' + str(int(time.time()))
         if jobKind == 'tml':
             queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN_TML']).pushItem(item)
         elif jobKind == 'qna':
             queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN_QNA']).pushItem(item)
+        elif jobKind == 'ner':
+            queueResponse = orcomm.getQueue(os.environ['PREDICT_SQS_QUEUE_ARN_NER']).pushItem(item)
     return queueResponse
 
 def communication_topics_get(limit=None):  # noqa: E501
