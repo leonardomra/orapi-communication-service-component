@@ -5,8 +5,8 @@ import json
 from communication_module.models.item import Item  # noqa: E501
 from communication_module.models.queue import Queue  # noqa: E501
 from communication_module import util
-from orcomm_module.orcommunicator import ORCommunicator
-from dbhandler.mysql_handler import MySQLHandler
+from orcommunicator import ORCommunicator
+from ordbhandler import MySQLHandler
 
 #db = MySQLHandler(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'], os.environ['MYSQL_HOST'], os.environ['MYSQL_DATABASE'])
 orcomm = ORCommunicator(os.environ['AWS_REGION'], os.environ['AWS_ACCESS_KEY'], os.environ['AWS_SECRET_KEY'])
