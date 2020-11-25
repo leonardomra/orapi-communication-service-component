@@ -3,7 +3,7 @@
 import connexion
 import os
 from communication_module import encoder
-from dbhandler.mysql_handler import MySQLHandler
+from ordbhandler import MySQLHandler
 
 def main():
     print('communication-service-component v1: ' + os.environ['INIT'])
